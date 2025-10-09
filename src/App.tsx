@@ -1,42 +1,59 @@
-import { useEffect, useRef } from "react";
-import { Editor } from "@/features/editor/editor";
+import { useEffect, useMemo, useRef } from "react";
+import { Engine } from "./features/engine/engine";
+import { Doc } from "./features/engine/document";
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const editorRef = useRef<Editor | null>(null);
+  const engineRef = useRef<Engine | null>(null);
+
+  const doc = useMemo(() => new Doc({ dpr: window.devicePixelRatio || 1 }), []);
+  doc.addNode({
+    id: "shape:rect-1",
+    name: "Rect",
+    type: "Shape.Rect",
+    params: {
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+      rx: 0,
+      ry: 0,
+    },
+    inputs: {},
+  });
+
+  doc.addNode({
+    id: "shape:rect-2",
+    name: "Rect",
+    type: "Shape.Rect",
+    params: {
+      x: 100,
+      y: 100,
+      w: 100,
+      h: 100,
+      rx: 0,
+      ry: 0,
+    },
+    inputs: {},
+  });
+
+  doc.addNode({
+    id: "modifier:transform-1",
+    name: "Transform",
+    type: "Modifier.Transform",
+    params: {
+      tx: 11,
+      ty: 100,
+    },
+    inputs: { in: { node: "shape:rect-1" } },
+  });
 
   useEffect(() => {
     if (!canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const editor = new Editor(canvas);
-    editorRef.current = editor;
-
-    // Seed a few shapes to play with
-    editor.add({
-      id: "r1",
-      type: "rect",
-      x: 60,
-      y: 60,
-      width: 120,
-      height: 80,
-      fill: "#EBD213",
-    });
-    editor.add({
-      id: "e1",
-      type: "ellipse",
-      x: 260,
-      y: 160,
-      radiusX: 40,
-      radiusY: 40,
-      fill: "#4D38AB",
-    });
-
-    return () => {
-      editor.destroy();
-      editorRef.current = null;
-    };
-  }, []);
+    const engine = new Engine(doc, canvasRef.current.getContext("2d")!);
+    engineRef.current = engine;
+    engineRef.current.draw();
+  }, [doc]);
 
   return (
     <div className="h-dvh w-dvw">
