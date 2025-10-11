@@ -57,8 +57,8 @@ export const Kernels: { [T in NodeType]: Kernel<T> } = {
     const knots = [
       {
         pos: { x: cx + rx, y: cy },
-        hIn: { dx: 0, dy: k * ry },
-        hOut: { dx: 0, dy: -k * ry },
+        hIn: { dx: 0, dy: -k * ry },
+        hOut: { dx: 0, dy: k * ry },
       },
       {
         pos: { x: cx, y: cy + ry },
@@ -67,8 +67,8 @@ export const Kernels: { [T in NodeType]: Kernel<T> } = {
       },
       {
         pos: { x: cx - rx, y: cy },
-        hIn: { dx: 0, dy: -k * ry },
-        hOut: { dx: 0, dy: k * ry },
+        hIn: { dx: 0, dy: k * ry },
+        hOut: { dx: 0, dy: -k * ry },
       },
       {
         pos: { x: cx, y: cy - ry },

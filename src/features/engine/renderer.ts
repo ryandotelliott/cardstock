@@ -21,8 +21,7 @@ export class Renderer {
       canvas.height = targetHeight;
     }
 
-    // Base transform that applies DPR scaling only. Geometry is already
-    // transformed in kernels; avoid reapplying node transforms here.
+    // Base transform that applies DPR scaling only.
     const base = new DOMMatrix().scaleSelf(dpr, dpr);
 
     this.ctx.save();
@@ -30,30 +29,27 @@ export class Renderer {
       const out = results[id];
       if (!out) continue;
 
-      this.ctx.save();
       this.ctx.fillStyle = "red"; // TODO: Use a style from the node
       this.ctx.strokeStyle = "blue"; // TODO: Use a style from the node
 
-      // Set DPR transform only; geometry already includes node transforms
-      this.ctx.setTransform(base.a, base.b, base.c, base.d, base.e, base.f);
+      this.ctx.setTransform(base);
       const path2d = toPath2D(out.geom);
       this.ctx.fill(path2d);
       this.ctx.stroke(path2d);
-      this.ctx.restore();
     }
     this.ctx.restore();
   }
 }
 
 function toPath2D(geo: PathGeometry): Path2D {
-  const p = new Path2D();
+  const path = new Path2D();
   for (const contour of geo.contours) {
     if (!contour.knots.length) continue;
     const k0 = contour.knots[0];
-    p.moveTo(k0.pos.x, k0.pos.y);
+    path.moveTo(k0.pos.x, k0.pos.y);
     for (let i = 1; i < contour.knots.length; i++) {
-      const a = contour.knots[i - 1],
-        b = contour.knots[i];
+      const a = contour.knots[i - 1];
+      const b = contour.knots[i];
 
       // Cubic if handles present, else line
       if (a.hOut || b.hIn) {
@@ -61,11 +57,12 @@ function toPath2D(geo: PathGeometry): Path2D {
         const c1y = a.hOut ? a.pos.y + a.hOut.dy : a.pos.y;
         const c2x = b.hIn ? b.pos.x + b.hIn.dx : b.pos.x;
         const c2y = b.hIn ? b.pos.y + b.hIn.dy : b.pos.y;
-        p.bezierCurveTo(c1x, c1y, c2x, c2y, b.pos.x, b.pos.y);
+        path.bezierCurveTo(c1x, c1y, c2x, c2y, b.pos.x, b.pos.y);
       } else {
-        p.lineTo(b.pos.x, b.pos.y);
+        path.lineTo(b.pos.x, b.pos.y);
       }
     }
+
     if (contour.closed) {
       // connect last to first
       const last = contour.knots[contour.knots.length - 1];
@@ -74,11 +71,11 @@ function toPath2D(geo: PathGeometry): Path2D {
         const c1y = last.hOut ? last.pos.y + last.hOut.dy : last.pos.y;
         const c2x = k0.hIn ? k0.pos.x + k0.hIn.dx : k0.pos.x;
         const c2y = k0.hIn ? k0.pos.y + k0.hIn.dy : k0.pos.y;
-        p.bezierCurveTo(c1x, c1y, c2x, c2y, k0.pos.x, k0.pos.y);
+        path.bezierCurveTo(c1x, c1y, c2x, c2y, k0.pos.x, k0.pos.y);
       } else {
-        p.closePath();
+        path.closePath();
       }
     }
   }
-  return p;
+  return path;
 }
