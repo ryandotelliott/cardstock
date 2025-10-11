@@ -1,5 +1,6 @@
-import type { Doc, EvalResult, PathGeometry } from "./document";
+import type { Doc, EvalResult, PathGeometry } from "../engine/document";
 import type { NodeId } from "../nodes/node-types";
+import { Matrix } from "../../lib/matrix";
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
@@ -21,8 +22,10 @@ export class Renderer {
       canvas.height = targetHeight;
     }
 
+    this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     // Base transform that applies DPR scaling only.
-    const base = new DOMMatrix().scaleSelf(dpr, dpr);
+    const base = new Matrix().scale(dpr, dpr);
 
     this.ctx.save();
     for (const id of doc.getDrawOrder()) {
@@ -32,7 +35,9 @@ export class Renderer {
       this.ctx.fillStyle = "red"; // TODO: Use a style from the node
       this.ctx.strokeStyle = "blue"; // TODO: Use a style from the node
 
-      this.ctx.setTransform(base);
+      const transform = out.transform ? base.multiply(out.transform) : base;
+      this.ctx.setTransform(transform.toDOMMatrix());
+
       const path2d = toPath2D(out.geom);
       this.ctx.fill(path2d);
       this.ctx.stroke(path2d);

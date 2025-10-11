@@ -1,7 +1,7 @@
 import { Evaluator } from "./evaluator";
 import type { Doc } from "./document";
 import type { NodeId, NodeInputsByType } from "../nodes/node-types";
-import { Renderer } from "./renderer";
+import { Renderer } from "../editor/renderer";
 
 export class Engine {
   private doc: Doc;
@@ -59,8 +59,6 @@ export class Engine {
       .filter((id) => sinks.includes(id));
     const existingSet = new Set(existingOrder);
     const newOnes = sinks.filter((id) => !existingSet.has(id));
-    this.doc
-      .getDrawOrder()
-      .splice(0, this.doc.getDrawOrder().length, ...existingOrder, ...newOnes);
+    this.doc.setDrawOrder([...existingOrder, ...newOnes]);
   }
 }

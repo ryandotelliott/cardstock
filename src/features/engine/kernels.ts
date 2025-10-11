@@ -3,7 +3,8 @@ import type {
   NodeParamsByType,
   NodeType,
 } from "../nodes/node-types";
-import type { EvalResult, PathGeometry } from "./document";
+import type { EvalResult } from "./document";
+import { Matrix } from "../../lib/matrix";
 
 type KernelInputsByType = {
   [T in NodeType]: { [K in keyof NodeInputsByType[T]]: EvalResult | undefined };
@@ -86,8 +87,8 @@ export const Kernels: { [T in NodeType]: Kernel<T> } = {
 
     const transform = matrixFromParams(params);
     return {
-      geom: transformGeometry(src.geom, transform),
-      transform: multiplyTransforms(src.transform, transform),
+      geom: src.geom,
+      transform: Matrix.multiply(src.transform, transform),
     };
   },
 };
@@ -95,50 +96,11 @@ export const Kernels: { [T in NodeType]: Kernel<T> } = {
 // helpers
 function matrixFromParams(
   params: NodeParamsByType["Modifier.Transform"],
-): DOMMatrix {
-  const matrix = new DOMMatrix();
+): Matrix {
   const sx = params.sx ?? 1,
     sy = params.sy ?? 1,
     r = ((params.r ?? 0) * Math.PI) / 180,
     tx = params.tx ?? 0,
     ty = params.ty ?? 0;
-  return matrix
-    .translateSelf(tx, ty)
-    .rotateSelf((r * 180) / Math.PI)
-    .scaleSelf(sx, sy);
-}
-
-function transformGeometry(
-  geo: PathGeometry,
-  transformationMatrix: DOMMatrix,
-): PathGeometry {
-  const point = (x: number, y: number) => {
-    const p = new DOMPoint(x, y).matrixTransform(transformationMatrix);
-    return { x: p.x, y: p.y };
-  };
-
-  const delta = (dx: number, dy: number) => {
-    // approximate handle transform as linear (ignores rotation from anchor) — fine for v0
-    // set the perspective to 0 to avoid skewing the handle
-    const p = new DOMPoint(dx, dy, 0, 0).matrixTransform(transformationMatrix);
-    return { dx: p.x, dy: p.y };
-  };
-
-  return {
-    contours: geo.contours.map((c) => ({
-      closed: c.closed,
-      knots: c.knots.map((k) => ({
-        pos: point(k.pos.x, k.pos.y),
-        hIn: k.hIn ? delta(k.hIn.dx, k.hIn.dy) : undefined,
-        hOut: k.hOut ? delta(k.hOut.dx, k.hOut.dy) : undefined,
-      })),
-    })),
-  };
-}
-
-function multiplyTransforms(a?: DOMMatrix, b?: DOMMatrix) {
-  if (!a && !b) return undefined;
-  if (!a) return b!;
-  if (!b) return a!;
-  return a.multiply(b);
+  return new Matrix().translate(tx, ty).rotate(r).scale(sx, sy);
 }
