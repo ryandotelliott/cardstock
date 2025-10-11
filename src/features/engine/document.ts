@@ -1,20 +1,7 @@
-export type NodeId = string;
+import type { NodeId, Node } from "../nodes/node-types";
 
-export type PortRef = { node: NodeId };
-
-export type NodeSpec = {
-  id: NodeId;
-  type: "Shape.Rect" | "Shape.Ellipse" | "Modifier.Transform";
-  params: Record<string, any>;
-  inputs?: Record<string, PortRef | undefined>;
-};
-
-export type Node = {
-  id: NodeId;
-  name: string;
-  type: NodeSpec["type"];
-  params: Record<string, any>;
-  inputs: Record<string, { node: NodeId } | undefined>;
+type Meta = {
+  dpr: number;
 };
 
 export type PathContour = {
@@ -35,11 +22,11 @@ export type EvalResult = {
 };
 
 export class Doc {
-  nodes: Record<string, Node> = {};
-  drawOrder: NodeId[] = [];
-  meta: Record<string, any> = {};
+  private nodes: Record<NodeId, Node> = {};
+  private drawOrder: NodeId[] = [];
+  private meta: Meta;
 
-  constructor(meta: Record<string, any> = {}) {
+  constructor(meta: Meta) {
     this.meta = meta;
   }
 
@@ -48,11 +35,23 @@ export class Doc {
     this.drawOrder.push(node.id);
   }
 
-  removeNode(id: string) {
+  removeNode(id: NodeId) {
     delete this.nodes[id];
   }
 
-  getNode(id: string) {
+  getNode(id: NodeId) {
     return this.nodes[id];
+  }
+
+  getMeta() {
+    return this.meta;
+  }
+
+  getNodes() {
+    return this.nodes;
+  }
+
+  getDrawOrder() {
+    return this.drawOrder;
   }
 }

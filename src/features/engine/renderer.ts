@@ -1,4 +1,5 @@
-import type { Doc, EvalResult, NodeId, PathGeometry } from "./document";
+import type { Doc, EvalResult, PathGeometry } from "./document";
+import type { NodeId } from "../nodes/node-types";
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
@@ -7,7 +8,7 @@ export class Renderer {
   }
 
   draw(doc: Doc, results: Record<NodeId, EvalResult>) {
-    const dpr = Number(doc.meta?.dpr) || 1;
+    const dpr = doc.getMeta()?.dpr || 1;
     const canvas = this.ctx.canvas;
 
     // Ensure the canvas backing store matches CSS size * DPR
@@ -20,11 +21,12 @@ export class Renderer {
       canvas.height = targetHeight;
     }
 
-    // Base transform that applies DPR scaling; compose per-node on top
+    // Base transform that applies DPR scaling only. Geometry is already
+    // transformed in kernels; avoid reapplying node transforms here.
     const base = new DOMMatrix().scaleSelf(dpr, dpr);
 
     this.ctx.save();
-    for (const id of doc.drawOrder) {
+    for (const id of doc.getDrawOrder()) {
       const out = results[id];
       if (!out) continue;
 
@@ -32,20 +34,8 @@ export class Renderer {
       this.ctx.fillStyle = "red"; // TODO: Use a style from the node
       this.ctx.strokeStyle = "blue"; // TODO: Use a style from the node
 
-      // Compose node transform with DPR base
-      if (out.transform) {
-        const combined = base.multiply(out.transform);
-        this.ctx.setTransform(
-          combined.a,
-          combined.b,
-          combined.c,
-          combined.d,
-          combined.e,
-          combined.f,
-        );
-      } else {
-        this.ctx.setTransform(base.a, base.b, base.c, base.d, base.e, base.f);
-      }
+      // Set DPR transform only; geometry already includes node transforms
+      this.ctx.setTransform(base.a, base.b, base.c, base.d, base.e, base.f);
       const path2d = toPath2D(out.geom);
       this.ctx.fill(path2d);
       this.ctx.stroke(path2d);

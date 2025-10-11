@@ -1,11 +1,20 @@
-import type { EvalResult, NodeSpec, PathGeometry } from "./document";
+import type {
+  NodeInputsByType,
+  NodeParamsByType,
+  NodeType,
+} from "../nodes/node-types";
+import type { EvalResult, PathGeometry } from "./document";
 
-type Kernel = (
-  inputs: Record<string, EvalResult | undefined>,
-  params: Record<string, any>,
+type KernelInputsByType = {
+  [T in NodeType]: { [K in keyof NodeInputsByType[T]]: EvalResult | undefined };
+};
+
+type Kernel<T extends NodeType> = (
+  inputs: KernelInputsByType[T],
+  params: NodeParamsByType[T],
 ) => EvalResult;
 
-export const Kernels: Record<NodeSpec["type"], Kernel> = {
+export const Kernels: { [T in NodeType]: Kernel<T> } = {
   "Shape.Rect": (_in, params) => {
     const { x = 0, y = 0, w = 100, h = 100, rx = 0, ry = rx } = params;
 
@@ -84,13 +93,15 @@ export const Kernels: Record<NodeSpec["type"], Kernel> = {
 };
 
 // helpers
-function matrixFromParams(pos: Record<string, any>): DOMMatrix {
+function matrixFromParams(
+  params: NodeParamsByType["Modifier.Transform"],
+): DOMMatrix {
   const matrix = new DOMMatrix();
-  const sx = pos.sx ?? 1,
-    sy = pos.sy ?? 1,
-    r = ((pos.r ?? 0) * Math.PI) / 180,
-    tx = pos.tx ?? 0,
-    ty = pos.ty ?? 0;
+  const sx = params.sx ?? 1,
+    sy = params.sy ?? 1,
+    r = ((params.r ?? 0) * Math.PI) / 180,
+    tx = params.tx ?? 0,
+    ty = params.ty ?? 0;
   return matrix
     .translateSelf(tx, ty)
     .rotateSelf((r * 180) / Math.PI)
@@ -108,7 +119,8 @@ function transformGeometry(
 
   const delta = (dx: number, dy: number) => {
     // approximate handle transform as linear (ignores rotation from anchor) — fine for v0
-    const p = new DOMPoint(dx, dy).matrixTransform(transformationMatrix);
+    // set the perspective to 0 to avoid skewing the handle
+    const p = new DOMPoint(dx, dy, 0, 0).matrixTransform(transformationMatrix);
     return { dx: p.x, dy: p.y };
   };
 
@@ -117,8 +129,8 @@ function transformGeometry(
       closed: c.closed,
       knots: c.knots.map((k) => ({
         pos: point(k.pos.x, k.pos.y),
-        handleIn: k.hIn ? delta(k.hIn.dx, k.hIn.dy) : undefined,
-        handleOut: k.hOut ? delta(k.hOut.dx, k.hOut.dy) : undefined,
+        hIn: k.hIn ? delta(k.hIn.dx, k.hIn.dy) : undefined,
+        hOut: k.hOut ? delta(k.hOut.dx, k.hOut.dy) : undefined,
       })),
     })),
   };

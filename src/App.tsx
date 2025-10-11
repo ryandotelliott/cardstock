@@ -19,22 +19,6 @@ export default function App() {
       rx: 0,
       ry: 0,
     },
-    inputs: {},
-  });
-
-  doc.addNode({
-    id: "shape:rect-2",
-    name: "Rect",
-    type: "Shape.Rect",
-    params: {
-      x: 100,
-      y: 100,
-      w: 100,
-      h: 100,
-      rx: 0,
-      ry: 0,
-    },
-    inputs: {},
   });
 
   doc.addNode({
@@ -42,8 +26,9 @@ export default function App() {
     name: "Transform",
     type: "Modifier.Transform",
     params: {
-      tx: 11,
-      ty: 100,
+      tx: 100,
+      ty: 30,
+      r: 45,
     },
     inputs: { in: { node: "shape:rect-1" } },
   });

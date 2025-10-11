@@ -1,4 +1,5 @@
-import type { Doc, EvalResult, NodeId } from "./document";
+import type { Doc, EvalResult } from "./document";
+import type { NodeId } from "../nodes/node-types";
 import { Kernels } from "./kernels";
 
 export class Evaluator {
@@ -14,7 +15,7 @@ export class Evaluator {
     const visit = (id: NodeId) => {
       if (seen.has(id)) return;
       seen.add(id);
-      const spec = this.doc.nodes[id];
+      const spec = this.doc.getNode(id);
       if (spec?.inputs) {
         for (const port of Object.values(spec.inputs)) {
           if (port) visit(port.node);
@@ -23,21 +24,38 @@ export class Evaluator {
       order.push(id);
     };
     // visit only what will be drawn
-    this.doc.drawOrder.forEach(visit);
+    this.doc.getDrawOrder().forEach(visit);
     return order;
   }
 
   evaluate(): Record<NodeId, EvalResult> {
     const results: Record<NodeId, EvalResult> = {};
+
     for (const id of this.topoOrder()) {
-      const spec = this.doc.nodes[id];
-      const kernel = Kernels[spec.type];
-      const inputs: Record<string, EvalResult | undefined> = {};
-      for (const [port, ref] of Object.entries(spec.inputs ?? {})) {
-        inputs[port] = ref ? results[ref.node] : undefined;
+      const spec = this.doc.getNode(id);
+      if (!spec) continue;
+
+      switch (spec.type) {
+        case "Shape.Rect": {
+          results[id] = Kernels["Shape.Rect"]({}, spec.params);
+          break;
+        }
+        case "Shape.Ellipse": {
+          results[id] = Kernels["Shape.Ellipse"]({}, spec.params);
+          break;
+        }
+        case "Modifier.Transform": {
+          const inRef = spec.inputs.in;
+          const inResult = inRef ? results[inRef.node] : undefined;
+          results[id] = Kernels["Modifier.Transform"](
+            { in: inResult },
+            spec.params,
+          );
+          break;
+        }
       }
-      results[id] = kernel(inputs, spec.params);
     }
-    return results; // caller renders using doc.drawOrder
+
+    return results;
   }
 }
