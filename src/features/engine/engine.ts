@@ -2,6 +2,7 @@ import { Evaluator } from "./evaluator";
 import type { Doc } from "./document";
 import type { NodeId, NodeInputsByType } from "../nodes/node-types";
 import { Renderer } from "../editor/renderer";
+import type { Matrix } from "@/lib/matrix";
 
 export class Engine {
   private doc: Doc;
@@ -34,9 +35,9 @@ export class Engine {
     }
   }
 
-  draw() {
+  draw(overlays?: Record<NodeId, Matrix>) {
     const results = this.evaluator.evaluate();
-    this.renderer.draw(this.doc, results);
+    this.renderer.draw(this.doc, results, overlays);
   }
 
   // Keep only sink nodes (no dependents) in drawOrder.

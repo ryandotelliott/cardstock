@@ -8,7 +8,11 @@ export class Renderer {
     this.ctx = ctx;
   }
 
-  draw(doc: Doc, results: Record<NodeId, EvalResult>) {
+  draw(
+    doc: Doc,
+    results: Record<NodeId, EvalResult>,
+    overlays?: Record<NodeId, Matrix>,
+  ) {
     const dpr = doc.getMeta()?.dpr || 1;
     const canvas = this.ctx.canvas;
 
@@ -35,7 +39,16 @@ export class Renderer {
       this.ctx.fillStyle = "red"; // TODO: Use a style from the node
       this.ctx.strokeStyle = "blue"; // TODO: Use a style from the node
 
-      const transform = out.transform ? base.multiply(out.transform) : base;
+      let transform = base;
+      if (out.transform) {
+        transform = transform.multiply(out.transform);
+      }
+
+      const overlay = overlays?.[id];
+      if (overlay) {
+        transform = transform.multiply(overlay);
+      }
+
       this.ctx.setTransform(transform.toDOMMatrix());
 
       const path2d = toPath2D(out.geom);
