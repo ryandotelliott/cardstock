@@ -57,6 +57,44 @@ export class Renderer {
     }
     this.ctx.restore();
   }
+
+  // Hit-test in CSS pixel space. Mirrors draw() DPR + transform logic.
+  // Overlays are intentionally ignored for hit-testing for now.
+  hitTest(
+    doc: Doc,
+    results: Record<NodeId, EvalResult>,
+    hitX: number,
+    hitY: number,
+  ): NodeId | null {
+    const dpr = doc.getMeta()?.dpr || 1;
+    const base = new Matrix().scale(dpr, dpr);
+
+    // Scale hit-test coordinates from CSS pixels to DPR-scaled pixels (canvas space).
+    const hx = hitX * dpr;
+    const hy = hitY * dpr;
+
+    const order = doc.getDrawOrder();
+    this.ctx.save();
+    for (let i = order.length - 1; i >= 0; i--) {
+      const id = order[i];
+      const out = results[id];
+      if (!out) continue;
+
+      let transform = base;
+      if (out.transform) {
+        transform = transform.multiply(out.transform);
+      }
+
+      this.ctx.setTransform(transform.toDOMMatrix());
+      const path = toPath2D(out.geom);
+      if (this.ctx.isPointInPath(path, hx, hy)) {
+        this.ctx.restore();
+        return id;
+      }
+    }
+    this.ctx.restore();
+    return null;
+  }
 }
 
 function toPath2D(geo: PathGeometry): Path2D {

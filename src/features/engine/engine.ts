@@ -1,13 +1,14 @@
 import { Evaluator } from "./evaluator";
-import type { Doc } from "./document";
+import type { Doc, EvalResult } from "./document";
 import type { NodeId, NodeInputsByType } from "../nodes/node-types";
 import { Renderer } from "../editor/renderer";
-import type { Matrix } from "@/lib/matrix";
+import { Matrix } from "@/lib/matrix";
 
 export class Engine {
   private doc: Doc;
   private evaluator: Evaluator;
   private renderer: Renderer;
+  private lastResults: Record<NodeId, EvalResult> | null = null;
 
   constructor(doc: Doc, ctx: CanvasRenderingContext2D) {
     this.doc = doc;
@@ -19,6 +20,7 @@ export class Engine {
   setDocument(doc: Doc) {
     this.doc = doc;
     this.evaluator = new Evaluator(doc);
+    this.lastResults = null;
     this.recomputeDrawOrder();
   }
 
@@ -31,13 +33,20 @@ export class Engine {
     if (!n) return;
     if (n.type === "Modifier.Transform" && port === "in") {
       n.inputs.in = { node: source };
+      this.lastResults = null;
       this.recomputeDrawOrder();
     }
   }
 
   draw(overlays?: Record<NodeId, Matrix>) {
     const results = this.evaluator.evaluate();
+    this.lastResults = results;
     this.renderer.draw(this.doc, results, overlays);
+  }
+
+  hitTest(x: number, y: number): NodeId | null {
+    const results = this.lastResults ?? this.evaluator.evaluate();
+    return this.renderer.hitTest(this.doc, results, x, y);
   }
 
   // Keep only sink nodes (no dependents) in drawOrder.
