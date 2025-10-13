@@ -1,6 +1,6 @@
-import type { Doc, EvalResult, PathGeometry } from "../engine/document";
-import type { NodeId } from "../nodes/node-types";
-import { Matrix } from "../../lib/matrix";
+import type { Doc, EvalResult, PathGeometry } from '../engine/document';
+import type { NodeId } from '../nodes/node-types';
+import { Matrix } from '../../lib/matrix';
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
@@ -8,11 +8,7 @@ export class Renderer {
     this.ctx = ctx;
   }
 
-  draw(
-    doc: Doc,
-    results: Record<NodeId, EvalResult>,
-    overlays?: Record<NodeId, Matrix>,
-  ) {
+  draw(doc: Doc, results: Record<NodeId, EvalResult>, overlays?: Record<NodeId, Matrix>) {
     const dpr = doc.getMeta()?.dpr || 1;
     const canvas = this.ctx.canvas;
 
@@ -36,17 +32,20 @@ export class Renderer {
       const out = results[id];
       if (!out) continue;
 
-      this.ctx.fillStyle = "red"; // TODO: Use a style from the node
-      this.ctx.strokeStyle = "blue"; // TODO: Use a style from the node
+      this.ctx.fillStyle = 'red'; // TODO: Use a style from the node
+      this.ctx.strokeStyle = 'blue'; // TODO: Use a style from the node
 
       let transform = base;
-      if (out.transform) {
-        transform = transform.multiply(out.transform);
-      }
 
+      // Apply overlay in world (pixel) space so drags are screen-aligned.
       const overlay = overlays?.[id];
       if (overlay) {
         transform = transform.multiply(overlay);
+      }
+
+      // Then apply the node's own transform
+      if (out.transform) {
+        transform = transform.multiply(out.transform);
       }
 
       this.ctx.setTransform(transform.toDOMMatrix());
@@ -60,12 +59,7 @@ export class Renderer {
 
   // Hit-test in CSS pixel space. Mirrors draw() DPR + transform logic.
   // Overlays are intentionally ignored for hit-testing for now.
-  hitTest(
-    doc: Doc,
-    results: Record<NodeId, EvalResult>,
-    hitX: number,
-    hitY: number,
-  ): NodeId | null {
+  hitTest(doc: Doc, results: Record<NodeId, EvalResult>, hitX: number, hitY: number): NodeId | null {
     const dpr = doc.getMeta()?.dpr || 1;
     const base = new Matrix().scale(dpr, dpr);
 
@@ -87,7 +81,7 @@ export class Renderer {
 
       this.ctx.setTransform(transform.toDOMMatrix());
       const path = toPath2D(out.geom);
-      if (this.ctx.isPointInPath(path, hx, hy)) {
+      if (this.ctx.isPointInPath(path, hx, hy) || this.ctx.isPointInStroke(path, hx, hy)) {
         this.ctx.restore();
         return id;
       }
@@ -128,9 +122,8 @@ function toPath2D(geo: PathGeometry): Path2D {
         const c2x = k0.hIn ? k0.pos.x + k0.hIn.dx : k0.pos.x;
         const c2y = k0.hIn ? k0.pos.y + k0.hIn.dy : k0.pos.y;
         path.bezierCurveTo(c1x, c1y, c2x, c2y, k0.pos.x, k0.pos.y);
-      } else {
-        path.closePath();
       }
+      path.closePath();
     }
   }
   return path;

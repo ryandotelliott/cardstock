@@ -1,5 +1,5 @@
-import type { NodeId, Node } from "../nodes/node-types";
-import type { Matrix } from "../../lib/matrix";
+import type { NodeId, Node } from '../nodes/node-types';
+import { Matrix } from '../../lib/matrix';
 
 type Meta = {
   dpr: number;
@@ -45,12 +45,43 @@ export class Doc {
     this.notify();
   }
 
+  applyTransform(id: NodeId, transform: Matrix) {
+    // TODO: For now, we only support transform nodes.
+    // Ideally this would create a new Transform node if needed.
+    const node = this.nodes[id];
+    if (node?.type === 'Modifier.Transform') {
+      const { sx = 1, sy = 1, r = 0, tx = 0, ty = 0 } = node.params;
+      // Match kernel order (T -> R -> S) and convert degrees to radians
+      const current = new Matrix()
+        .translate(tx, ty)
+        .rotate((r * Math.PI) / 180)
+        .scale(sx, sy);
+      const next = transform.multiply(current);
+
+      // Decompose back to params. Note: this is a simplification that
+      // loses skew, but is fine for now as we only support SRT transforms.
+      node.params.tx = next.e;
+      node.params.ty = next.f;
+      node.params.sx = Math.sqrt(next.a * next.a + next.b * next.b);
+      node.params.sy = Math.sqrt(next.c * next.c + next.d * next.d);
+      // Extract rotation in degrees. For matrix [[a c e],[b d f]], angle = atan2(b, a)
+      node.params.r = (Math.atan2(next.b, next.a) * 180) / Math.PI;
+
+      this.notify();
+    }
+  }
+
   getNode(id: NodeId): Node | undefined {
     return this.nodes[id];
   }
 
   getMeta() {
     return this.meta;
+  }
+
+  updateMeta(meta: Partial<Meta>) {
+    this.meta = { ...this.meta, ...meta };
+    this.notify();
   }
 
   getNodes() {

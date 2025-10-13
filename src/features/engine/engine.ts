@@ -1,8 +1,8 @@
-import { Evaluator } from "./evaluator";
-import type { Doc, EvalResult } from "./document";
-import type { NodeId, NodeInputsByType } from "../nodes/node-types";
-import { Renderer } from "../editor/renderer";
-import { Matrix } from "@/lib/matrix";
+import { Evaluator } from './evaluator';
+import type { Doc, EvalResult } from './document';
+import type { NodeId, NodeInputsByType } from '../nodes/node-types';
+import { Renderer } from '../editor/renderer';
+import { Matrix } from '@/lib/matrix';
 
 export class Engine {
   private doc: Doc;
@@ -24,14 +24,10 @@ export class Engine {
     this.recomputeDrawOrder();
   }
 
-  connect(
-    target: NodeId,
-    port: keyof NodeInputsByType["Modifier.Transform"],
-    source: NodeId,
-  ) {
+  connect(target: NodeId, port: keyof NodeInputsByType['Modifier.Transform'], source: NodeId) {
     const n = this.doc.getNode(target);
     if (!n) return;
-    if (n.type === "Modifier.Transform" && port === "in") {
+    if (n.type === 'Modifier.Transform' && port === 'in') {
       n.inputs.in = { node: source };
       this.lastResults = null;
       this.recomputeDrawOrder();
@@ -49,6 +45,10 @@ export class Engine {
     return this.renderer.hitTest(this.doc, results, x, y);
   }
 
+  applyTransform(id: NodeId, transform: Matrix) {
+    this.doc.applyTransform(id, transform);
+  }
+
   // Keep only sink nodes (no dependents) in drawOrder.
   private recomputeDrawOrder() {
     const dependents = new Map<NodeId, Set<NodeId>>();
@@ -59,14 +59,10 @@ export class Engine {
         if (ref) dependents.get(ref.node)?.add(id);
       }
     }
-    const sinks = Object.keys(nodes).filter(
-      (id) => (dependents.get(id)?.size ?? 0) === 0,
-    );
+    const sinks = Object.keys(nodes).filter((id) => (dependents.get(id)?.size ?? 0) === 0);
 
     // Preserve existing order for sinks already present; append new sinks.
-    const existingOrder = this.doc
-      .getDrawOrder()
-      .filter((id) => sinks.includes(id));
+    const existingOrder = this.doc.getDrawOrder().filter((id) => sinks.includes(id));
     const existingSet = new Set(existingOrder);
     const newOnes = sinks.filter((id) => !existingSet.has(id));
     this.doc.setDrawOrder([...existingOrder, ...newOnes]);
