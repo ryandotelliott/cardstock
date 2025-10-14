@@ -7,13 +7,15 @@ export default function NodePanel({ className }: { className?: string }) {
   const nodes = doc ? Object.keys(doc.getNodes()) : [];
 
   return (
-    <div className={cn('flex h-full w-48 flex-col overflow-y-auto border-l bg-background p-2', className)}>
-      <p className="text-sm font-medium select-none">Nodes - {nodes.length}</p>
+    <div
+      className={cn('bg-background text-foreground flex h-full w-48 flex-col overflow-y-auto border-l p-2', className)}
+    >
+      <p className="select-none text-sm font-medium">Nodes - {nodes.length}</p>
       {doc
         ? Object.keys(doc.getNodes()).map((node) => {
             const fullNode = doc.getNode(node);
             return (
-              <div key={node} className="rounded p-2 select-none hover:bg-muted">
+              <div key={node} className="hover:bg-muted select-none rounded p-2">
                 {fullNode?.name}
               </div>
             );

@@ -33,8 +33,8 @@ export class Renderer {
       const evalResult = results[id];
       if (!evalResult) continue;
 
-      this.ctx.fillStyle = 'red'; // TODO: Use a style from the node
-      this.ctx.strokeStyle = 'blue'; // TODO: Use a style from the node
+      this.ctx.fillStyle = 'grey'; // TODO: Use a style from the node
+      this.ctx.strokeStyle = 'orange'; // TODO: Use a style from the node
 
       const overlayTransform = overlays?.[id];
       const localToCanvasTransform = buildFullTransform({

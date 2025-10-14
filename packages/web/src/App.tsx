@@ -63,9 +63,9 @@ export default function App() {
   }, [doc]);
 
   return (
-    <div className="h-dvh w-dvw">
+    <div className="dark h-dvh w-dvw">
       <EditorCanvas />
-      <NodePanel className="absolute top-0 right-0" />
+      <NodePanel className="absolute right-0 top-0" />
     </div>
   );
 }

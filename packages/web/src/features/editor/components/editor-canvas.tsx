@@ -31,7 +31,7 @@ export default function EditorCanvas({ className }: Props) {
 
   return (
     <canvas
-      className={cn('h-full w-full', className)}
+      className={cn('bg-background h-full w-full', className)}
       id="editor-canvas"
       ref={canvasRef}
       onMouseDown={handleMouseDown}

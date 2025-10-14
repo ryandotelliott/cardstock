@@ -1,0 +1,13 @@
+{
+  "name": "geom-wasm",
+  "version": "0.1.0",
+  "main": "./pkg/geom_wasm.js",
+  "types": "./pkg/geom_wasm.d.ts",
+  "type": "module",
+  "files": [
+    "pkg"
+  ],
+  "scripts": {
+    "build": "wasm-pack build --target web --out-dir ./pkg"
+  }
+}
