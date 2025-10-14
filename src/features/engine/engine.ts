@@ -1,7 +1,7 @@
-import { Evaluator } from './evaluator';
-import type { Doc, EvalResult } from './document';
-import type { NodeId, NodeInputsByType } from '../nodes/node-types';
-import { Renderer } from '../editor/renderer';
+import { Evaluator } from '@/features/engine/evaluator';
+import type { Doc, EvalResult } from '@/features/engine/document';
+import type { NodeId, NodeInputsByType } from '@/features/nodes/node-types';
+import { Renderer } from '@/features/editor/renderer';
 import { Matrix } from '@/lib/matrix';
 
 export class Engine {

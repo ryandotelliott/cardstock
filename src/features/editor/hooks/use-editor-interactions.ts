@@ -1,5 +1,5 @@
 import { useEffect, type MouseEvent, type RefObject } from 'react';
-import { useEditorStore } from '../state/editor-store';
+import { useEditorStore } from '@/features/editor/state/editor-store';
 import { Matrix } from '@/lib/matrix';
 import { Engine } from '@/features/engine/engine';
 

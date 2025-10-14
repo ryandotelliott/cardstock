@@ -1,5 +1,5 @@
-import type { Knot, PathGeometry } from '../engine/geometry';
-import { getPathBounds } from '../engine/geometry';
+import type { Knot, PathGeometry } from '@/lib/geometry';
+import { getPathBounds } from '@/lib/geometry';
 import type { Matrix } from '@/lib/matrix';
 
 export function buildFullTransform({

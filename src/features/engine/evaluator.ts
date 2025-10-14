@@ -1,6 +1,6 @@
-import type { Doc, EvalResult } from "./document";
-import type { NodeId } from "../nodes/node-types";
-import { Kernels } from "./kernels";
+import type { Doc, EvalResult } from '@/features/engine/document';
+import type { NodeId } from '@/features/nodes/node-types';
+import { Kernels } from '@/features/engine/kernels';
 
 export class Evaluator {
   private doc: Doc;
@@ -36,21 +36,18 @@ export class Evaluator {
       if (!spec) continue;
 
       switch (spec.type) {
-        case "Shape.Rect": {
-          results[id] = Kernels["Shape.Rect"]({}, spec.params);
+        case 'Shape.Rect': {
+          results[id] = Kernels['Shape.Rect']({}, spec.params);
           break;
         }
-        case "Shape.Ellipse": {
-          results[id] = Kernels["Shape.Ellipse"]({}, spec.params);
+        case 'Shape.Ellipse': {
+          results[id] = Kernels['Shape.Ellipse']({}, spec.params);
           break;
         }
-        case "Modifier.Transform": {
+        case 'Modifier.Transform': {
           const inRef = spec.inputs.in;
           const inResult = inRef ? results[inRef.node] : undefined;
-          results[id] = Kernels["Modifier.Transform"](
-            { in: inResult },
-            spec.params,
-          );
+          results[id] = Kernels['Modifier.Transform']({ in: inResult }, spec.params);
           break;
         }
       }

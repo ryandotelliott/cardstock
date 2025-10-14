@@ -1,22 +1,15 @@
-import type {
-  NodeInputsByType,
-  NodeParamsByType,
-  NodeType,
-} from "../nodes/node-types";
-import type { EvalResult } from "./document";
-import { Matrix } from "../../lib/matrix";
+import type { NodeInputsByType, NodeParamsByType, NodeType } from '@/features/nodes/node-types';
+import type { EvalResult } from '@/features/engine/document';
+import { Matrix } from '@/lib/matrix';
 
 type KernelInputsByType = {
   [T in NodeType]: { [K in keyof NodeInputsByType[T]]: EvalResult | undefined };
 };
 
-type Kernel<T extends NodeType> = (
-  inputs: KernelInputsByType[T],
-  params: NodeParamsByType[T],
-) => EvalResult;
+type Kernel<T extends NodeType> = (inputs: KernelInputsByType[T], params: NodeParamsByType[T]) => EvalResult;
 
 export const Kernels: { [T in NodeType]: Kernel<T> } = {
-  "Shape.Rect": (_in, params) => {
+  'Shape.Rect': (_in, params) => {
     const { x = 0, y = 0, w = 100, h = 100, rx = 0, ry = rx } = params;
 
     return {
@@ -51,7 +44,7 @@ export const Kernels: { [T in NodeType]: Kernel<T> } = {
       },
     };
   },
-  "Shape.Ellipse": (_in, params) => {
+  'Shape.Ellipse': (_in, params) => {
     const { cx = 0, cy = 0, rx = 50, ry = rx } = params;
     // v0: 4-cubic approximation of ellipse (keep simple)
     const k = 0.5522847498; // circle handle factor
@@ -79,10 +72,10 @@ export const Kernels: { [T in NodeType]: Kernel<T> } = {
     ];
     return { geom: { contours: [{ closed: true, knots }] } };
   },
-  "Modifier.Transform": (inputs, params) => {
+  'Modifier.Transform': (inputs, params) => {
     const src = inputs.in;
     if (!src || !src.geom) {
-      throw new Error("Modifier.Transform requires an input");
+      throw new Error('Modifier.Transform requires an input');
     }
 
     const transform = matrixFromParams(params);
@@ -94,9 +87,7 @@ export const Kernels: { [T in NodeType]: Kernel<T> } = {
 };
 
 // helpers
-function matrixFromParams(
-  params: NodeParamsByType["Modifier.Transform"],
-): Matrix {
+function matrixFromParams(params: NodeParamsByType['Modifier.Transform']): Matrix {
   const sx = params.sx ?? 1,
     sy = params.sy ?? 1,
     r = ((params.r ?? 0) * Math.PI) / 180,

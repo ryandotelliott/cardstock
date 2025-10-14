@@ -1,7 +1,6 @@
-import type { NodeId, Node } from '../nodes/node-types';
-export type { NodeId, Node } from '../nodes/node-types';
-import { Matrix } from '../../lib/matrix';
-import type { PathGeometry } from './geometry';
+import type { NodeId, Node } from '@/features/nodes/node-types';
+import { Matrix } from '@/lib/matrix';
+import type { PathGeometry } from '@/lib/geometry';
 
 type Meta = {
   dpr: number;

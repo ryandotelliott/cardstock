@@ -1,6 +1,7 @@
-import type { Doc, EvalResult, NodeId } from '../engine/document';
-import { Matrix } from '../../lib/matrix';
-import { buildFullTransform, drawSelection, toPath2D } from './renderer-utils';
+import type { Doc, EvalResult } from '@/features/engine/document';
+import type { NodeId } from '@/features/nodes/node-types';
+import { Matrix } from '@/lib/matrix';
+import { buildFullTransform, drawSelection, toPath2D } from '@/features/editor/renderer-utils';
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;

@@ -1,8 +1,8 @@
 import { useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Engine } from '@/features/engine/engine';
-import { useEditorStore } from '../state/editor-store';
-import { useEditorInteractions } from '../hooks/use-editor-interactions';
+import { useEditorStore } from '@/features/editor/state/editor-store';
+import { useEditorInteractions } from '@/features/editor/hooks/use-editor-interactions';
 
 type Props = {
   className?: string;
