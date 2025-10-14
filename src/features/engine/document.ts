@@ -49,8 +49,8 @@ export class Doc {
 
       // Decompose back to params. Note: this is a simplification that
       // loses skew, but is fine for now as we only support SRT transforms.
-      node.params.tx = next.e;
-      node.params.ty = next.f;
+        node.params.tx = next.tx;
+        node.params.ty = next.ty;
       node.params.sx = Math.sqrt(next.a * next.a + next.b * next.b);
       node.params.sy = Math.sqrt(next.c * next.c + next.d * next.d);
       // Extract rotation in degrees. For matrix [[a c e],[b d f]], angle = atan2(b, a)

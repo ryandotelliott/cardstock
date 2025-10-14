@@ -2,24 +2,24 @@ export type Point = { x: number; y: number };
 export type Vec = { dx: number; dy: number };
 
 // Row-major 2D affine matrix
-// [a, c, e]
-// [b, d, f]
+// [a, c, tx]
+// [b, d, ty]
 // [0, 0, 1]
 export class Matrix {
   a: number;
   b: number;
   c: number;
   d: number;
-  e: number;
-  f: number;
+  tx: number;
+  ty: number;
 
-  constructor(a = 1, b = 0, c = 0, d = 1, e = 0, f = 0) {
+  constructor(a = 1, b = 0, c = 0, d = 1, tx = 0, ty = 0) {
     this.a = a;
     this.b = b;
     this.c = c;
     this.d = d;
-    this.e = e;
-    this.f = f;
+    this.tx = tx;
+    this.ty = ty;
   }
 
   static from(m: DOMMatrix): Matrix {
@@ -34,7 +34,7 @@ export class Matrix {
   }
 
   toDOMMatrix(): DOMMatrix {
-    return new DOMMatrix([this.a, this.b, this.c, this.d, this.e, this.f]);
+    return new DOMMatrix([this.a, this.b, this.c, this.d, this.tx, this.ty]);
   }
 
   multiply(m: Matrix): Matrix {
@@ -42,8 +42,8 @@ export class Matrix {
     const b = this.b * m.a + this.d * m.b;
     const c = this.a * m.c + this.c * m.d;
     const d = this.b * m.c + this.d * m.d;
-    const e = this.a * m.e + this.c * m.f + this.e;
-    const f = this.b * m.e + this.d * m.f + this.f;
+    const e = this.a * m.tx + this.c * m.ty + this.tx;
+    const f = this.b * m.tx + this.d * m.ty + this.ty;
     return new Matrix(a, b, c, d, e, f);
   }
 
@@ -63,8 +63,8 @@ export class Matrix {
 
   transformPoint({ x, y }: Point): Point {
     return {
-      x: this.a * x + this.c * y + this.e,
-      y: this.b * x + this.d * y + this.f,
+      x: this.a * x + this.c * y + this.tx,
+      y: this.b * x + this.d * y + this.ty,
     };
   }
 
