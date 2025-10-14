@@ -1,9 +1,9 @@
 export type NodeId = string;
 
-export type NodeType = "Shape.Rect" | "Shape.Ellipse" | "Modifier.Transform";
+export type NodeType = 'Shape.Rect' | 'Shape.Ellipse' | 'Modifier.Transform' | 'Modifier.Offset';
 
 export type NodeParamsByType = {
-  "Shape.Rect": {
+  'Shape.Rect': {
     x: number;
     y: number;
     w: number;
@@ -11,20 +11,24 @@ export type NodeParamsByType = {
     rx?: number;
     ry?: number;
   };
-  "Shape.Ellipse": { cx: number; cy: number; rx: number; ry?: number };
-  "Modifier.Transform": {
+  'Shape.Ellipse': { cx: number; cy: number; rx: number; ry?: number };
+  'Modifier.Transform': {
     sx?: number;
     sy?: number;
     r?: number;
     tx?: number;
     ty?: number;
   };
+  'Modifier.Offset': {
+    amount: number;
+  };
 };
 
 export type NodeInputsByType = {
-  "Shape.Rect": never;
-  "Shape.Ellipse": never;
-  "Modifier.Transform": { in: { node: NodeId } };
+  'Shape.Rect': never;
+  'Shape.Ellipse': never;
+  'Modifier.Transform': { in: { node: NodeId } };
+  'Modifier.Offset': { in: { node: NodeId } };
 };
 
 type NodeInputs<T extends NodeType> = NodeInputsByType[T] extends never

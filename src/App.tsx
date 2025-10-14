@@ -36,6 +36,14 @@ export default function App() {
       inputs: { in: { node: 'shape:rect-1' } },
     });
 
+    doc.addNode({
+      id: 'modifier:offset-1',
+      name: 'Offset',
+      type: 'Modifier.Offset',
+      params: { amount: 10 },
+      inputs: { in: { node: 'modifier:transform-1' } },
+    });
+
     return doc;
   }, []);
 

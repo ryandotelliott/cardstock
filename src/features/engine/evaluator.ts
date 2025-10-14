@@ -50,6 +50,12 @@ export class Evaluator {
           results[id] = Kernels['Modifier.Transform']({ in: inResult }, spec.params);
           break;
         }
+        case 'Modifier.Offset': {
+          const inRef = spec.inputs.in;
+          const inResult = inRef ? results[inRef.node] : undefined;
+          results[id] = Kernels['Modifier.Offset']({ in: inResult }, spec.params);
+          break;
+        }
       }
     }
 

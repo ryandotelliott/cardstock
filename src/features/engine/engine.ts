@@ -32,6 +32,11 @@ export class Engine {
       this.lastResults = null;
       this.recomputeDrawOrder();
     }
+    if (n.type === 'Modifier.Offset' && port === 'in') {
+      n.inputs.in = { node: source };
+      this.lastResults = null;
+      this.recomputeDrawOrder();
+    }
   }
 
   draw(opts?: { overlays?: Record<NodeId, Matrix>; selectedIds?: NodeId[] }) {
