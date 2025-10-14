@@ -1,21 +1,11 @@
 import type { NodeId, Node } from '../nodes/node-types';
+export type { NodeId, Node } from '../nodes/node-types';
 import { Matrix } from '../../lib/matrix';
+import type { PathGeometry } from './geometry';
 
 type Meta = {
   dpr: number;
 };
-
-export type PathContour = {
-  closed: boolean;
-  // Cubic beziers represented as anchor + handle deltas
-  knots: {
-    pos: { x: number; y: number };
-    hIn?: { dx: number; dy: number };
-    hOut?: { dx: number; dy: number };
-  }[];
-};
-
-export type PathGeometry = { contours: PathContour[] };
 
 export type EvalResult = {
   geom: PathGeometry;

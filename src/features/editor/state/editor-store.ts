@@ -1,19 +1,20 @@
-import type { NodeId } from "@/features/nodes/node-types";
-import type { Doc } from "@/features/engine/document";
-import type { Matrix } from "@/lib/matrix";
-import { create } from "zustand";
+import type { NodeId } from '@/features/nodes/node-types';
+import type { Doc } from '@/features/engine/document';
+import type { Matrix } from '@/lib/matrix';
+import { create } from 'zustand';
 
 type Interaction =
-  | { mode: "idle" }
+  | { mode: 'idle' }
+  | { mode: 'selection'; nodes: NodeId[] }
   | {
-      mode: "dragging";
+      mode: 'interacting';
       origin: { x: number; y: number };
       nodes: NodeId[];
+      isDragging: boolean;
     };
 
 type EditorState = {
   doc: Doc | null;
-  selectedNodeId: NodeId | null;
   interaction: Interaction;
   // Incremented when the document notifies a change
   docVersion: number;
@@ -27,9 +28,11 @@ type EditorState = {
 
 type EditorActions = {
   setDoc: (doc: Doc) => void;
-  setSelectedNodeId: (nodeId: NodeId | null) => void;
   startInteraction: (interaction: Interaction) => void;
   clearInteraction: () => void;
+  setSelection: (nodes: NodeId[]) => void;
+  // Transition from interacting to dragging
+  startDragging: () => void;
   // Set or clear an overlay transform for a node
   setOverlays: (nodeId: NodeId, transform?: Matrix) => void;
   // Clear all overlay transforms
@@ -38,8 +41,7 @@ type EditorActions = {
 
 export const useEditorStore = create<EditorState & EditorActions>((set) => ({
   doc: null,
-  selectedNodeId: null,
-  interaction: { mode: "idle" },
+  interaction: { mode: 'idle' },
   docVersion: 0,
   overlays: {},
   overlayVersion: 0,
@@ -47,14 +49,21 @@ export const useEditorStore = create<EditorState & EditorActions>((set) => ({
     set((state) => {
       // Clean up any previous subscription
       state.docUnsub?.();
-      const unsub = doc.subscribe(() =>
-        set((s) => ({ docVersion: s.docVersion + 1 })),
-      );
+      const unsub = doc.subscribe(() => set((s) => ({ docVersion: s.docVersion + 1 })));
       return { doc, docUnsub: unsub };
     }),
-  setSelectedNodeId: (nodeId) => set({ selectedNodeId: nodeId }),
   startInteraction: (interaction) => set({ interaction }),
-  clearInteraction: () => set({ interaction: { mode: "idle" } }),
+  clearInteraction: () => set({ interaction: { mode: 'idle' } }),
+  setSelection: (nodes) => set({ interaction: { mode: 'selection', nodes } }),
+  startDragging: () =>
+    set((state) => {
+      if (state.interaction.mode === 'interacting') {
+        return {
+          interaction: { ...state.interaction, isDragging: true },
+        };
+      }
+      return state;
+    }),
   setOverlays: (nodeId, transform) =>
     set((state) => {
       const next = { ...state.overlays };

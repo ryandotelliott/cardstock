@@ -34,10 +34,10 @@ export class Engine {
     }
   }
 
-  draw(overlays?: Record<NodeId, Matrix>) {
+  draw(opts?: { overlays?: Record<NodeId, Matrix>; selectedIds?: NodeId[] }) {
     const results = this.evaluator.evaluate();
     this.lastResults = results;
-    this.renderer.draw(this.doc, results, overlays);
+    this.renderer.draw(this.doc, results, opts?.overlays, opts?.selectedIds ?? []);
   }
 
   hitTest(x: number, y: number): NodeId | null {

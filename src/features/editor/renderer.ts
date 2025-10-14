@@ -1,6 +1,6 @@
-import type { Doc, EvalResult, PathGeometry } from '../engine/document';
-import type { NodeId } from '../nodes/node-types';
+import type { Doc, EvalResult, NodeId } from '../engine/document';
 import { Matrix } from '../../lib/matrix';
+import { buildFullTransform, drawSelection, toPath2D } from './renderer-utils';
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
@@ -8,7 +8,7 @@ export class Renderer {
     this.ctx = ctx;
   }
 
-  draw(doc: Doc, results: Record<NodeId, EvalResult>, overlays?: Record<NodeId, Matrix>) {
+  draw(doc: Doc, results: Record<NodeId, EvalResult>, overlays?: Record<NodeId, Matrix>, selectedIds: NodeId[] = []) {
     const dpr = doc.getMeta()?.dpr || 1;
     const canvas = this.ctx.canvas;
 
@@ -25,43 +25,41 @@ export class Renderer {
     this.ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Base transform that applies DPR scaling only.
-    const base = new Matrix().scale(dpr, dpr);
+    const dprTransform = new Matrix().scale(dpr, dpr);
 
     this.ctx.save();
     for (const id of doc.getDrawOrder()) {
-      const out = results[id];
-      if (!out) continue;
+      const evalResult = results[id];
+      if (!evalResult) continue;
 
       this.ctx.fillStyle = 'red'; // TODO: Use a style from the node
       this.ctx.strokeStyle = 'blue'; // TODO: Use a style from the node
 
-      let transform = base;
+      const overlayTransform = overlays?.[id];
+      const localToCanvasTransform = buildFullTransform({
+        dprTransform,
+        overlayTransform,
+        nodeTransform: evalResult.transform,
+      });
 
-      // Apply overlay in world (pixel) space so drags are screen-aligned.
-      const overlay = overlays?.[id];
-      if (overlay) {
-        transform = transform.multiply(overlay);
-      }
+      this.ctx.setTransform(localToCanvasTransform.toDOMMatrix());
 
-      // Then apply the node's own transform
-      if (out.transform) {
-        transform = transform.multiply(out.transform);
-      }
-
-      this.ctx.setTransform(transform.toDOMMatrix());
-
-      const path2d = toPath2D(out.geom);
+      const path2d = toPath2D(evalResult.geom);
       this.ctx.fill(path2d);
       this.ctx.stroke(path2d);
+
+      // Selection bounding box only (axis-aligned in screen space)
+      if (selectedIds.includes(id)) {
+        drawSelection(this.ctx, evalResult.geom, dprTransform, overlayTransform, evalResult.transform);
+      }
     }
     this.ctx.restore();
   }
 
-  // Hit-test in CSS pixel space. Mirrors draw() DPR + transform logic.
-  // Overlays are intentionally ignored for hit-testing for now.
+  // Hit-test in pixel space. Overlays are not used when hit-testing.
   hitTest(doc: Doc, results: Record<NodeId, EvalResult>, hitX: number, hitY: number): NodeId | null {
     const dpr = doc.getMeta()?.dpr || 1;
-    const base = new Matrix().scale(dpr, dpr);
+    const dprTransform = new Matrix().scale(dpr, dpr);
 
     // Scale hit-test coordinates from CSS pixels to DPR-scaled pixels (canvas space).
     const hx = hitX * dpr;
@@ -74,14 +72,14 @@ export class Renderer {
       const out = results[id];
       if (!out) continue;
 
-      let transform = base;
-      if (out.transform) {
-        transform = transform.multiply(out.transform);
-      }
-
+      const transform = buildFullTransform({
+        dprTransform,
+        nodeTransform: out.transform,
+      });
       this.ctx.setTransform(transform.toDOMMatrix());
-      const path = toPath2D(out.geom);
-      if (this.ctx.isPointInPath(path, hx, hy) || this.ctx.isPointInStroke(path, hx, hy)) {
+
+      const path2d = toPath2D(out.geom);
+      if (this.ctx.isPointInPath(path2d, hx, hy) || this.ctx.isPointInStroke(path2d, hx, hy)) {
         this.ctx.restore();
         return id;
       }
@@ -89,42 +87,4 @@ export class Renderer {
     this.ctx.restore();
     return null;
   }
-}
-
-function toPath2D(geo: PathGeometry): Path2D {
-  const path = new Path2D();
-  for (const contour of geo.contours) {
-    if (!contour.knots.length) continue;
-    const k0 = contour.knots[0];
-    path.moveTo(k0.pos.x, k0.pos.y);
-    for (let i = 1; i < contour.knots.length; i++) {
-      const a = contour.knots[i - 1];
-      const b = contour.knots[i];
-
-      // Cubic if handles present, else line
-      if (a.hOut || b.hIn) {
-        const c1x = a.hOut ? a.pos.x + a.hOut.dx : a.pos.x;
-        const c1y = a.hOut ? a.pos.y + a.hOut.dy : a.pos.y;
-        const c2x = b.hIn ? b.pos.x + b.hIn.dx : b.pos.x;
-        const c2y = b.hIn ? b.pos.y + b.hIn.dy : b.pos.y;
-        path.bezierCurveTo(c1x, c1y, c2x, c2y, b.pos.x, b.pos.y);
-      } else {
-        path.lineTo(b.pos.x, b.pos.y);
-      }
-    }
-
-    if (contour.closed) {
-      // connect last to first
-      const last = contour.knots[contour.knots.length - 1];
-      if (last.hOut || k0.hIn) {
-        const c1x = last.hOut ? last.pos.x + last.hOut.dx : last.pos.x;
-        const c1y = last.hOut ? last.pos.y + last.hOut.dy : last.pos.y;
-        const c2x = k0.hIn ? k0.pos.x + k0.hIn.dx : k0.pos.x;
-        const c2y = k0.hIn ? k0.pos.y + k0.hIn.dy : k0.pos.y;
-        path.bezierCurveTo(c1x, c1y, c2x, c2y, k0.pos.x, k0.pos.y);
-      }
-      path.closePath();
-    }
-  }
-  return path;
 }
