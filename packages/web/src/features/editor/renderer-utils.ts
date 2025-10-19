@@ -1,5 +1,6 @@
-import type { Knot, PathGeometry } from '@/lib/geometry';
-import { getPathBounds } from '@/lib/geometry';
+import { transformPathGeometry, type Knot, type PathGeometry } from '@/lib/geometry';
+import { pathGeometryToSvgPath } from '@/lib/svg';
+import { boundsPath } from 'geom-wasm';
 import type { Matrix } from '@/lib/matrix';
 
 export function buildFullTransform({
@@ -28,41 +29,35 @@ export function drawSelection(
   overlayTransform: Matrix | undefined,
   nodeTransform: Matrix | undefined,
 ) {
-  const localBounds = getPathBounds(geom);
-  if (!localBounds) return;
+  if (!geom.contours.length) return;
 
-  // Build the full transform used for drawing to convert local bbox -> canvas space
-  const localToCanvasTransform = buildFullTransform({
+  // Build the full transform local -> canvas
+  const localToCanvas = buildFullTransform({
     dprTransform,
     overlayTransform,
     nodeTransform,
   });
 
-  const corners = [
-    { x: localBounds.minX, y: localBounds.minY },
-    { x: localBounds.maxX, y: localBounds.minY },
-    { x: localBounds.maxX, y: localBounds.maxY },
-    { x: localBounds.minX, y: localBounds.maxY },
-  ].map((p) => localToCanvasTransform.transformPoint(p));
+  // Transform the entire path to be in canvas space so bounds are axis-aligned in canvas space
+  const canvasGeom = transformPathGeometry(geom, localToCanvas);
+  const svgPathCanvas = pathGeometryToSvgPath(canvasGeom);
 
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-  for (const p of corners) {
-    if (p.x < minX) minX = p.x;
-    if (p.y < minY) minY = p.y;
-    if (p.x > maxX) maxX = p.x;
-    if (p.y > maxY) maxY = p.y;
-  }
+  const raw = boundsPath(svgPathCanvas);
+  if (raw == undefined) return;
+  const [bx0, by0, bx1, by1] = raw;
+  if (!isFinite(bx0 + by0 + bx1 + by1)) return;
+
+  const w = bx1 - bx0;
+  const h = by1 - by0;
+  if (!(w > 0 && h > 0) || !isFinite(w + h)) return;
 
   ctx.save();
-  // Draw in canvas coordinates (no transform)
+  // Draw in canvas pixel space (identity transform)
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.strokeStyle = '#0362fc';
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 6]);
-  ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+  ctx.strokeRect(bx0, by0, w, h);
   ctx.setLineDash([]);
   ctx.restore();
 }
@@ -78,7 +73,6 @@ export function toPath2D(geo: PathGeometry): Path2D {
     }
 
     if (contour.closed) {
-      // connect last to first
       const last = contour.knots[contour.knots.length - 1];
       drawKnotSegment(path, last, k0);
       path.closePath();

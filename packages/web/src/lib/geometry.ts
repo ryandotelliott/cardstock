@@ -1,3 +1,5 @@
+import { Matrix } from './matrix';
+
 export type Handle = {
   dx: number;
   dy: number;
@@ -35,4 +37,20 @@ export function getPathBounds(geo: PathGeometry): { minX: number; minY: number; 
     }
   }
   return found ? { minX, minY, maxX, maxY } : null;
+}
+
+/**
+ * Transform all knots in a path geometry by a matrix
+ */
+export function transformPathGeometry(geom: PathGeometry, m: Matrix): PathGeometry {
+  return {
+    contours: geom.contours.map((contour) => ({
+      closed: contour.closed,
+      knots: contour.knots.map((knot) => ({
+        pos: m.transformPoint(knot.pos),
+        hIn: knot.hIn ? m.transformVec(knot.hIn) : undefined,
+        hOut: knot.hOut ? m.transformVec(knot.hOut) : undefined,
+      })),
+    })),
+  };
 }

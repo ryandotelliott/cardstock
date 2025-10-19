@@ -35,4 +35,3 @@ export const RectKernel: Kernel<'Shape.Rect'> = (_in, params) => {
     },
   };
 };
-
