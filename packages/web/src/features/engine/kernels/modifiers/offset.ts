@@ -10,7 +10,9 @@ export const OffsetKernel: Kernel<'Modifier.Offset'> = (inputs, params) => {
 
   const { amount } = params;
   const svgPath = pathGeometryToSvgPath(src.geom);
-  const offsetSvgPath = offsetPath(svgPath, amount);
+
+  // Negate the amount, because Kurbo uses negative for outward offset
+  const offsetSvgPath = offsetPath(svgPath, -amount);
   const offsetGeom = svgPathToPathGeometry(offsetSvgPath);
   return {
     geom: offsetGeom,

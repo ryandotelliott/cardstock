@@ -19,8 +19,6 @@ export default function App() {
         y: 0,
         w: 100,
         h: 100,
-        rx: 0,
-        ry: 0,
       },
     });
 
@@ -40,7 +38,7 @@ export default function App() {
       id: 'modifier:offset-1',
       name: 'Offset',
       type: 'Modifier.Offset',
-      params: { amount: -10 },
+      params: { amount: 10 },
       inputs: { in: { node: 'modifier:transform-1' } },
     });
 
