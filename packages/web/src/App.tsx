@@ -40,7 +40,7 @@ export default function App() {
       id: 'modifier:offset-1',
       name: 'Offset',
       type: 'Modifier.Offset',
-      params: { amount: 10 },
+      params: { amount: -10 },
       inputs: { in: { node: 'modifier:transform-1' } },
     });
 

@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+kurbo = "0.12.0"
 wasm-bindgen = "0.2"
 
 [lib]
