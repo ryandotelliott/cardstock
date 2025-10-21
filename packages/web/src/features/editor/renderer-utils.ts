@@ -54,9 +54,8 @@ export function drawSelection(
   ctx.save();
   // Draw in canvas pixel space (identity transform)
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.strokeStyle = '#0362fc';
+  ctx.strokeStyle = '#2D90F3';
   ctx.lineWidth = 1;
-  ctx.setLineDash([4, 6]);
   ctx.strokeRect(bx0, by0, w, h);
   ctx.setLineDash([]);
   ctx.restore();

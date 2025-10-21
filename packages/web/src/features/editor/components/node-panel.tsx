@@ -38,7 +38,7 @@ export default function NodePanel({ className }: { className?: string }) {
             return (
               <div
                 key={node}
-                className="bg-sidebar-accent text-sidebar-accent-foreground flex select-none items-center justify-between gap-2 rounded-lg p-2 text-sm"
+                className="bg-sidebar-accent text-sidebar-accent-foreground flex select-none items-center justify-between gap-2 rounded-lg p-1 text-sm"
               >
                 <div className="flex items-center gap-2">
                   <Button
