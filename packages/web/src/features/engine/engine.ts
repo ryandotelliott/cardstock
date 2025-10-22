@@ -45,6 +45,11 @@ export class Engine {
     this.renderer.draw(this.doc, results, opts?.overlays, opts?.selectedIds ?? []);
   }
 
+  getNodeTransform(id: NodeId): Matrix | undefined {
+    const results = this.lastResults ?? this.evaluator.evaluate();
+    return results[id]?.transform;
+  }
+
   hitTest(x: number, y: number): NodeId | null {
     const results = this.lastResults ?? this.evaluator.evaluate();
     return this.renderer.hitTest(this.doc, results, x, y);

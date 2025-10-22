@@ -1,4 +1,5 @@
 import type { NodeId, Node } from '@/features/nodes/node-types';
+import type { NodeOf } from '@/features/nodes/node-types';
 import { Matrix } from '@/lib/matrix';
 import type { PathGeometry } from '@/lib/geometry';
 
@@ -58,7 +59,7 @@ export class Doc {
         node.params.r = (Math.atan2(next.b, next.a) * 180) / Math.PI;
 
         this.notify();
-        return; // Done
+        return;
       }
 
       // If not a transform node, traverse up the input chain
@@ -68,7 +69,51 @@ export class Doc {
         targetId = undefined;
       }
     }
-    // TODO: If no transform node is found, consider inserting one.
+    // No transform node found: insert one directly above the original node and rewire dependents
+    const original = this.nodes[id];
+    if (!original) return;
+
+    // Generate a simple unique id
+    const newId: NodeId = `t_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+    const transformNode: Node = {
+      id: newId,
+      name: `${original.name} Transform`,
+      type: 'Modifier.Transform',
+      params: { sx: 1, sy: 1, r: 0, tx: 0, ty: 0 },
+      inputs: { in: { node: id } },
+    } as Node; // satisfy union
+
+    // Insert node without altering draw order here (it will be discovered via dependents)
+    this.nodes[newId] = transformNode;
+
+    // Rewire dependents that pointed to the original id to point to the new transform node
+    for (const n of Object.values(this.nodes)) {
+      if (!n || !('inputs' in n) || !n.inputs) continue;
+      if ('in' in n.inputs && n.inputs.in && n.inputs.in.node === id) {
+        if (n.type === 'Modifier.Transform') {
+          n.inputs.in = { node: newId };
+        } else if (n.type === 'Modifier.Offset') {
+          n.inputs.in = { node: newId };
+        }
+      }
+    }
+
+    // Update draw order: if the original was a sink being drawn, replace it with the new transform node
+    this.drawOrder = this.drawOrder.map((nid) => (nid === id ? newId : nid));
+
+    // Commit transform onto the new node (current is identity)
+    const n = this.nodes[newId];
+    if (n && n.type === 'Modifier.Transform') {
+      const tnode: NodeOf<'Modifier.Transform'> = n;
+      const next = transform;
+      tnode.params.tx = next.tx;
+      tnode.params.ty = next.ty;
+      tnode.params.sx = Math.sqrt(next.a * next.a + next.b * next.b);
+      tnode.params.sy = Math.sqrt(next.c * next.c + next.d * next.d);
+      tnode.params.r = (Math.atan2(next.b, next.a) * 180) / Math.PI;
+    }
+
+    this.notify();
   }
 
   getNode(id: NodeId): Node | undefined {

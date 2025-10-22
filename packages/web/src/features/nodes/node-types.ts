@@ -24,6 +24,7 @@ export type NodeParamsByType = {
   };
 };
 
+// TODO: Should the input type be standardized so that we know that "in" is the input port? This is useful for document.ts::applyTransform.
 export type NodeInputsByType = {
   'Shape.Rect': never;
   'Shape.Ellipse': never;

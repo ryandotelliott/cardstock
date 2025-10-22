@@ -23,4 +23,3 @@ function matrixFromParams(params: NodeParamsByType['Modifier.Transform']): Matri
     ty = params.ty ?? 0;
   return new Matrix().translate(tx, ty).rotate(r).scale(sx, sy);
 }
-

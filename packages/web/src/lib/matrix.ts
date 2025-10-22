@@ -61,6 +61,20 @@ export class Matrix {
     return this.multiply(new Matrix(cos, sin, -sin, cos, 0, 0));
   }
 
+  inverse(): Matrix {
+    const det = this.a * this.d - this.b * this.c;
+    if (det === 0) {
+      return new Matrix();
+    }
+    const invA = this.d / det;
+    const invB = -this.b / det;
+    const invC = -this.c / det;
+    const invD = this.a / det;
+    const invTx = -(invA * this.tx + invC * this.ty);
+    const invTy = -(invB * this.tx + invD * this.ty);
+    return new Matrix(invA, invB, invC, invD, invTx, invTy);
+  }
+
   transformPoint({ x, y }: Point): Point {
     return {
       x: this.a * x + this.c * y + this.tx,
