@@ -50,6 +50,11 @@ export class Engine {
     return results[id]?.transform;
   }
 
+  getEvalResult(id: NodeId): EvalResult | undefined {
+    const results = this.lastResults ?? this.evaluator.evaluate();
+    return results[id];
+  }
+
   hitTest(x: number, y: number): NodeId | null {
     const results = this.lastResults ?? this.evaluator.evaluate();
     return this.renderer.hitTest(this.doc, results, x, y);
