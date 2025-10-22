@@ -9,7 +9,8 @@ type Meta = {
 
 export type EvalResult = {
   geom: PathGeometry;
-  transform?: Matrix;
+  // The Local -> World transform accumulated up to this node
+  localToWorld?: Matrix;
 };
 
 export class Doc {

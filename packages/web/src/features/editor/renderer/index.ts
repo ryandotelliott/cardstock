@@ -1,7 +1,7 @@
 import type { Doc, EvalResult } from '@/features/engine/document';
 import type { NodeId } from '@/features/nodes/node-types';
 import { Matrix } from '@/lib/matrix';
-import { buildFullTransform } from '@/features/editor/renderer/transform';
+import { composeLocalToCanvas } from '@/features/editor/renderer/transform';
 import {
   drawSelection,
   computeSelectionCornersCanvas,
@@ -36,7 +36,7 @@ export class Renderer {
     this.ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Base transform that applies DPR scaling only.
-    const dprTransform = new Matrix().scale(dpr, dpr);
+    const worldToCanvas = new Matrix().scale(dpr, dpr);
 
     this.ctx.save();
     for (const id of doc.getDrawOrder()) {
@@ -45,11 +45,11 @@ export class Renderer {
 
       this.ctx.fillStyle = '#D9D9D9'; // TODO: Use a style from the node
 
-      const overlayTransform = overlays?.[id];
-      const localToCanvasTransform = buildFullTransform({
-        dprTransform,
-        overlayTransform,
-        nodeTransform: evalResult.transform,
+      const overlayWorld = overlays?.[id];
+      const localToCanvasTransform = composeLocalToCanvas({
+        worldToCanvas,
+        overlayWorld,
+        localToWorld: evalResult.localToWorld,
       });
 
       const dom = localToCanvasTransform.toDOMMatrix();
@@ -67,7 +67,7 @@ export class Renderer {
 
       // Selection bounding box only (axis-aligned in screen space)
       if (selectedIds.includes(id)) {
-        drawSelection(this.ctx, evalResult.geom, dprTransform, overlayTransform, evalResult.transform);
+        drawSelection(this.ctx, evalResult.geom, worldToCanvas, overlayWorld, evalResult.localToWorld);
       }
     }
     this.ctx.restore();
@@ -76,7 +76,7 @@ export class Renderer {
   // Hit-test in pixel space. Overlays are not used when hit-testing.
   hitTest(doc: Doc, results: Record<NodeId, EvalResult>, hitX: number, hitY: number): NodeId | null {
     const dpr = doc.getMeta()?.dpr || 1;
-    const dprTransform = new Matrix().scale(dpr, dpr);
+    const worldToCanvas = new Matrix().scale(dpr, dpr);
 
     // Scale hit-test coordinates from CSS pixels to DPR-scaled pixels (canvas space).
     const hx = hitX * dpr;
@@ -89,7 +89,7 @@ export class Renderer {
       const out = results[id];
       if (!out) continue;
 
-      const transform = buildFullTransform({ dprTransform, nodeTransform: out.transform });
+      const transform = composeLocalToCanvas({ worldToCanvas, localToWorld: out.localToWorld });
       const dom = transform.toDOMMatrix();
       const localPath = toPath2D(out.geom);
 
@@ -117,7 +117,7 @@ export class Renderer {
     hitY: number,
   ): { nodeId: NodeId; handleId: HandleId } | null {
     const dpr = doc.getMeta()?.dpr || 1;
-    const dprTransform = new Matrix().scale(dpr, dpr);
+    const worldToCanvas = new Matrix().scale(dpr, dpr);
 
     // Scale hit-test coordinates from CSS pixels to DPR-scaled pixels (canvas space).
     const hx = hitX * dpr;
@@ -134,8 +134,8 @@ export class Renderer {
       const out = results[id];
       if (!out) continue;
 
-      const overlayTransform = overlays?.[id];
-      const corners = computeSelectionCornersCanvas(out.geom, dprTransform, overlayTransform, out.transform);
+      const overlayWorld = overlays?.[id];
+      const corners = computeSelectionCornersCanvas(out.geom, worldToCanvas, overlayWorld, out.localToWorld);
       if (!corners) continue;
 
       // Inflate rects by hit slop for easier targeting.

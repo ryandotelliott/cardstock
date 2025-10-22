@@ -11,7 +11,7 @@ export const TransformKernel: Kernel<'Modifier.Transform'> = (inputs, params) =>
   const transform = matrixFromParams(params);
   return {
     geom: src.geom,
-    transform: Matrix.multiply(src.transform, transform),
+    localToWorld: Matrix.multiply(src.localToWorld, transform),
   };
 };
 

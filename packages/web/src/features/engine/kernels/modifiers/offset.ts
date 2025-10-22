@@ -16,6 +16,6 @@ export const OffsetKernel: Kernel<'Modifier.Offset'> = (inputs, params) => {
   const offsetGeom = svgPathToPathGeometry(offsetSvgPath);
   return {
     geom: offsetGeom,
-    transform: src.transform,
+    localToWorld: src.localToWorld,
   };
 };

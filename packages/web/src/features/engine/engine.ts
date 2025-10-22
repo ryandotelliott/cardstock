@@ -46,9 +46,9 @@ export class Engine {
     this.renderer.draw(this.doc, results, opts?.overlays, opts?.selectedIds ?? []);
   }
 
-  getNodeTransform(id: NodeId): Matrix | undefined {
+  getNodeLocalToWorld(id: NodeId): Matrix | undefined {
     const results = this.lastResults ?? this.evaluator.evaluate();
-    return results[id]?.transform;
+    return results[id]?.localToWorld;
   }
 
   getEvalResult(id: NodeId): EvalResult | undefined {
@@ -77,7 +77,7 @@ export class Engine {
 
   // Accepts a world-space overlay transform matrix and applies the equivalent local delta L = N^-1 * Δ * N
   applyWorldOverlay(id: NodeId, overlay: Matrix) {
-    const N = this.getNodeTransform(id) ?? new Matrix();
+    const N = this.getNodeLocalToWorld(id) ?? new Matrix();
     const localDelta = N.inverse().multiply(overlay).multiply(N);
     this.applyLocalDelta(id, localDelta);
   }

@@ -2,7 +2,7 @@ import type { PathGeometry } from '@/lib/geometry';
 import { pathGeometryToSvgPath } from '@/lib/svg';
 import { boundsPath } from 'geom-wasm';
 import type { Matrix } from '@/lib/matrix';
-import { buildFullTransform } from '@/features/editor/renderer/transform';
+import { composeLocalToCanvas } from '@/features/editor/renderer/transform';
 
 // Handle identifiers are index-based to avoid implying world/cardinal directions.
 // Corners: c0..c3 go clockwise starting at local (minX,minY)
@@ -20,17 +20,17 @@ export type Point = { x: number; y: number };
  */
 export function computeSelectionCornersCanvas(
   geom: PathGeometry,
-  dprTransform: Matrix,
-  overlayTransform: Matrix | undefined,
-  nodeTransform: Matrix | undefined,
+  worldToCanvas: Matrix,
+  overlayWorld: Matrix | undefined,
+  localToWorld: Matrix | undefined,
 ): Point[] | null {
   if (!geom.contours.length) return null;
 
-  // Build the full transform local -> canvas
-  const localToCanvas = buildFullTransform({
-    dprTransform,
-    overlayTransform,
-    nodeTransform,
+  // Compose Local → Canvas
+  const localToCanvas = composeLocalToCanvas({
+    worldToCanvas,
+    overlayWorld,
+    localToWorld,
   });
 
   // Compute local-space bounds of the geometry
@@ -102,11 +102,11 @@ export function getEdgeHandleRects(corners: Point[], handleSize: number): Handle
 export function drawSelection(
   ctx: CanvasRenderingContext2D,
   geom: PathGeometry,
-  dprTransform: Matrix,
-  overlayTransform: Matrix | undefined,
-  nodeTransform: Matrix | undefined,
+  worldToCanvas: Matrix,
+  overlayWorld: Matrix | undefined,
+  localToWorld: Matrix | undefined,
 ) {
-  const bboxCornersCanvas = computeSelectionCornersCanvas(geom, dprTransform, overlayTransform, nodeTransform);
+  const bboxCornersCanvas = computeSelectionCornersCanvas(geom, worldToCanvas, overlayWorld, localToWorld);
   if (!bboxCornersCanvas) return;
 
   ctx.save();

@@ -1,23 +1,23 @@
 import { Matrix } from '@/lib/matrix';
 
 /**
- * Builds the full transformation matrix using DPR scaling, overlay transforms, and the node transform.
+ * Compose Local → Canvas using World → Canvas (DPR), optional Overlay (World), and Local → World.
  */
-export function buildFullTransform({
-  dprTransform,
-  overlayTransform,
-  nodeTransform,
+export function composeLocalToCanvas({
+  worldToCanvas,
+  overlayWorld,
+  localToWorld,
 }: {
-  dprTransform: Matrix;
-  overlayTransform?: Matrix;
-  nodeTransform?: Matrix;
+  worldToCanvas: Matrix;
+  overlayWorld?: Matrix;
+  localToWorld?: Matrix;
 }) {
-  let transform = dprTransform;
-  if (overlayTransform) {
-    transform = transform.multiply(overlayTransform);
+  let transform = worldToCanvas;
+  if (overlayWorld) {
+    transform = transform.multiply(overlayWorld);
   }
-  if (nodeTransform) {
-    transform = transform.multiply(nodeTransform);
+  if (localToWorld) {
+    transform = transform.multiply(localToWorld);
   }
   return transform;
 }
@@ -46,8 +46,8 @@ export function localScaleDelta(sx: number, sy: number, pivot: { x: number; y: n
  *
  * Preview uses overlay * N, and commit pre-multiplies overlay as well, both yielding N * L.
  */
-export function worldOverlayForLocalDelta(nodeTransform?: Matrix, localDelta?: Matrix): Matrix | undefined {
+export function worldOverlayForLocalDelta(localToWorld?: Matrix, localDelta?: Matrix): Matrix | undefined {
   if (!localDelta) return undefined;
-  const N = nodeTransform ?? new Matrix();
+  const N = localToWorld ?? new Matrix();
   return N.multiply(localDelta).multiply(N.inverse());
 }

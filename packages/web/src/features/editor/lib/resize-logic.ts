@@ -3,7 +3,7 @@ import { type Interaction } from '@/features/editor/state/editor-store';
 import { type NodeId } from '@/features/nodes/node-types';
 import { Matrix } from '@/lib/matrix';
 import type { Point } from '@/lib/geometry';
-import { buildFullTransform, localScaleDelta, worldOverlayForLocalDelta } from '@/features/editor/renderer/transform';
+import { composeLocalToCanvas, localScaleDelta, worldOverlayForLocalDelta } from '@/features/editor/renderer/transform';
 import { pathGeometryToSvgPath } from '@/lib/svg';
 import { boundsPath } from 'geom-wasm';
 import { type HandleId } from '@/features/editor/renderer/selection';
@@ -54,9 +54,9 @@ export function calculateResizeOverlay(
   const evalResult = engine.getEvalResult(nodeId);
   if (!evalResult) return;
 
-  const localToCanvas = buildFullTransform({
-    dprTransform: new Matrix().scale(dpr, dpr),
-    nodeTransform: evalResult.transform,
+  const localToCanvas = composeLocalToCanvas({
+    worldToCanvas: new Matrix().scale(dpr, dpr),
+    localToWorld: evalResult.localToWorld,
   });
   const canvasToLocal = localToCanvas.inverse();
 
@@ -107,5 +107,5 @@ export function calculateResizeOverlay(
   sy = clampScale(sy);
 
   const localDelta = localScaleDelta(sx, sy, pivot);
-  return worldOverlayForLocalDelta(evalResult.transform, localDelta);
+  return worldOverlayForLocalDelta(evalResult.localToWorld, localDelta);
 }
