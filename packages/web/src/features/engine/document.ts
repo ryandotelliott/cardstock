@@ -35,7 +35,9 @@ export class Doc {
     this.notify();
   }
 
-  applyTransform(id: NodeId, transform: Matrix) {
+  // Apply a local-space delta (post-multiplied) to the nearest transform node above `id`.
+  // This preserves the intended effect N' = N * L, with L in local space.
+  applyLocalDelta(id: NodeId, localDelta: Matrix) {
     let targetId: NodeId | undefined = id;
     while (targetId) {
       const node: Node | undefined = this.nodes[targetId];
@@ -47,17 +49,10 @@ export class Doc {
           .translate(tx, ty)
           .rotate((r * Math.PI) / 180)
           .scale(sx, sy);
-        const next = transform.multiply(current);
+        const next = current.multiply(localDelta); // post-multiply by local delta
 
-        // Decompose back to params. Note: this is a simplification that
-        // loses skew, but is fine for now as we only support SRT transforms.
-        node.params.tx = next.tx;
-        node.params.ty = next.ty;
-        node.params.sx = Math.sqrt(next.a * next.a + next.b * next.b);
-        node.params.sy = Math.sqrt(next.c * next.c + next.d * next.d);
-        // Extract rotation in degrees. For matrix [[a c e],[b d f]], angle = atan2(b, a)
-        node.params.r = (Math.atan2(next.b, next.a) * 180) / Math.PI;
-
+        // Decompose next back to TRS params, preserving negative scale signs.
+        this.setTransformParamsFromMatrix(node, next);
         this.notify();
         return;
       }
@@ -69,21 +64,21 @@ export class Doc {
         targetId = undefined;
       }
     }
+
     // No transform node found: insert one directly above the original node and rewire dependents
     const original = this.nodes[id];
     if (!original) return;
 
-    // Generate a simple unique id
-    const newId: NodeId = `t_${Math.random().toString(36).slice(2)}_${Date.now()}`;
-    const transformNode: Node = {
+    // TODO: Probably worth creating a function that builds new nodes.
+    const newId = `transform_${Date.now()}`;
+    const transformNode: NodeOf<'Modifier.Transform'> = {
       id: newId,
       name: `${original.name} Transform`,
       type: 'Modifier.Transform',
       params: { sx: 1, sy: 1, r: 0, tx: 0, ty: 0 },
       inputs: { in: { node: id } },
-    } as Node; // satisfy union
+    };
 
-    // Insert node without altering draw order here (it will be discovered via dependents)
     this.nodes[newId] = transformNode;
 
     // Rewire dependents that pointed to the original id to point to the new transform node
@@ -101,19 +96,60 @@ export class Doc {
     // Update draw order: if the original was a sink being drawn, replace it with the new transform node
     this.drawOrder = this.drawOrder.map((nid) => (nid === id ? newId : nid));
 
-    // Commit transform onto the new node (current is identity)
+    // Commit the local delta onto the new node (current is identity)
     const n = this.nodes[newId];
     if (n && n.type === 'Modifier.Transform') {
-      const tnode: NodeOf<'Modifier.Transform'> = n;
-      const next = transform;
-      tnode.params.tx = next.tx;
-      tnode.params.ty = next.ty;
-      tnode.params.sx = Math.sqrt(next.a * next.a + next.b * next.b);
-      tnode.params.sy = Math.sqrt(next.c * next.c + next.d * next.d);
-      tnode.params.r = (Math.atan2(next.b, next.a) * 180) / Math.PI;
+      const next = localDelta;
+      this.setTransformParamsFromMatrix(n, next);
     }
 
     this.notify();
+  }
+
+  // Helper: decompose a matrix built as T * R * S into params, preserving negative scale signs.
+  private setTransformParamsFromMatrix(node: NodeOf<'Modifier.Transform'>, m: Matrix) {
+    // Translation
+    node.params.tx = m.tx;
+    node.params.ty = m.ty;
+
+    // Linear part L = R * S = [[a, c],[b, d]] in our storage
+    const a = m.a,
+      b = m.b,
+      c = m.c,
+      d = m.d;
+
+    // Extract rotation θ where L = R(θ) * S(sx, sy) and R = [[cos, -sin],[sin, cos]]
+    // a = cos(θ)*sx, b = -sin(θ)*sx
+    const theta = Math.atan2(-b, a);
+    const cos = Math.cos(theta);
+    const sin = Math.sin(theta);
+
+    // Recover sx, sy with sign preserved; pick the more stable divisor
+    let sx: number;
+    if (Math.abs(cos) >= Math.abs(sin)) {
+      sx = a / cos;
+    } else {
+      sx = -b / sin;
+    }
+
+    let sy: number;
+    if (Math.abs(cos) >= Math.abs(sin)) {
+      sy = d / cos;
+    } else {
+      sy = c / sin; // c = sin(θ)*sy
+    }
+
+    // Handle close-to-zero cases to avoid infinities
+    if (!Number.isFinite(sx)) {
+      sx = Math.sign(sx) || 1;
+    }
+    if (!Number.isFinite(sy)) {
+      sy = Math.sign(sy) || 1;
+    }
+
+    node.params.sx = sx;
+    node.params.sy = sy;
+    node.params.r = (theta * 180) / Math.PI;
   }
 
   getNode(id: NodeId): Node | undefined {

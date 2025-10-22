@@ -2,6 +2,7 @@ import { Evaluator } from '@/features/engine/evaluator';
 import type { Doc, EvalResult } from '@/features/engine/document';
 import type { NodeId, NodeInputsByType } from '@/features/nodes/node-types';
 import { Renderer } from '@/features/editor/renderer';
+import type { HandleId } from '@/features/editor/renderer/selection';
 import { Matrix } from '@/lib/matrix';
 
 export class Engine {
@@ -60,8 +61,25 @@ export class Engine {
     return this.renderer.hitTest(this.doc, results, x, y);
   }
 
-  applyTransform(id: NodeId, transform: Matrix) {
-    this.doc.applyTransform(id, transform);
+  hitTestHandles(
+    x: number,
+    y: number,
+    overlays: Record<NodeId, Matrix> | undefined,
+    selectedIds: NodeId[],
+  ): { nodeId: NodeId; handleId: HandleId } | null {
+    const results = this.lastResults ?? this.evaluator.evaluate();
+    return this.renderer.hitTestHandles(this.doc, results, overlays, selectedIds, x, y);
+  }
+
+  applyLocalDelta(id: NodeId, localDelta: Matrix) {
+    this.doc.applyLocalDelta(id, localDelta);
+  }
+
+  // Accepts a world-space overlay transform matrix and applies the equivalent local delta L = N^-1 * Δ * N
+  applyWorldOverlay(id: NodeId, overlay: Matrix) {
+    const N = this.getNodeTransform(id) ?? new Matrix();
+    const localDelta = N.inverse().multiply(overlay).multiply(N);
+    this.applyLocalDelta(id, localDelta);
   }
 
   // Keep only sink nodes (no dependents) in drawOrder.

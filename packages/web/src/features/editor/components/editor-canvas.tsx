@@ -25,7 +25,10 @@ export default function EditorCanvas({ className }: Props) {
   }, [doc]);
 
   useEffect(() => {
-    const selectedIds = interaction.mode === 'interacting' || interaction.mode === 'selection' ? interaction.nodes : [];
+    const selectedIds =
+      interaction.mode === 'interacting' || interaction.mode === 'selection' || interaction.mode === 'resizing'
+        ? interaction.nodes
+        : [];
     engineRef.current?.draw({ overlays, selectedIds });
   }, [docVersion, overlays, overlayVersion, interaction]);
 

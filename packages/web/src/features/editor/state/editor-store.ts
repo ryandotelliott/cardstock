@@ -2,14 +2,22 @@ import type { NodeId } from '@/features/nodes/node-types';
 import type { Doc } from '@/features/engine/document';
 import type { Matrix } from '@/lib/matrix';
 import { create } from 'zustand';
+import type { HandleId } from '../renderer/selection';
 
-type Interaction =
+export type Interaction =
   | { mode: 'idle' }
   | { mode: 'selection'; nodes: NodeId[] }
   | {
       mode: 'interacting';
       origin: { x: number; y: number };
       nodes: NodeId[];
+      isDragging: boolean;
+    }
+  | {
+      mode: 'resizing';
+      origin: { x: number; y: number };
+      nodes: NodeId[];
+      handle: HandleId;
       isDragging: boolean;
     };
 
@@ -57,7 +65,7 @@ export const useEditorStore = create<EditorState & EditorActions>((set) => ({
   setSelection: (nodes) => set({ interaction: { mode: 'selection', nodes } }),
   startDragging: () =>
     set((state) => {
-      if (state.interaction.mode === 'interacting') {
+      if (state.interaction.mode === 'interacting' || state.interaction.mode === 'resizing') {
         return {
           interaction: { ...state.interaction, isDragging: true },
         };

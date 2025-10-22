@@ -2,6 +2,7 @@ import { useEffect, type MouseEvent, type RefObject } from 'react';
 import { useEditorStore } from '@/features/editor/state/editor-store';
 import { Matrix } from '@/lib/matrix';
 import { Engine } from '@/features/engine/engine';
+import { calculateResizeOverlay } from '@/features/editor/lib/resize-logic';
 
 const DRAG_THRESHOLD = 5;
 
@@ -11,11 +12,12 @@ export function useEditorInteractions(
 ) {
   const { overlays, setOverlays, clearOverlays } = useEditorStore();
   const { interaction, startInteraction, startDragging } = useEditorStore();
+  const { doc } = useEditorStore();
   const { setSelection } = useEditorStore();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && interaction.mode === 'interacting') {
+      if (e.key === 'Escape' && (interaction.mode === 'interacting' || interaction.mode === 'resizing')) {
         clearOverlays();
         setSelection(interaction.nodes);
       }
@@ -29,6 +31,26 @@ export function useEditorInteractions(
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+
+    // If something is already selected, prioritize handle hit-testing first.
+    const currentSelection =
+      interaction.mode === 'selection' || interaction.mode === 'interacting' || interaction.mode === 'resizing'
+        ? interaction.nodes
+        : [];
+    if (currentSelection.length) {
+      const handleHit = engineRef.current.hitTestHandles(x, y, overlays, currentSelection);
+      if (handleHit) {
+        // Start a resizing interaction. Scaling behavior will be added later.
+        startInteraction({
+          mode: 'resizing',
+          origin: { x, y },
+          nodes: currentSelection,
+          handle: handleHit.handleId,
+          isDragging: false,
+        });
+        return;
+      }
+    }
 
     const hit = engineRef.current.hitTest(x, y);
     if (hit) {
@@ -45,7 +67,8 @@ export function useEditorInteractions(
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (interaction.mode !== 'interacting' || !canvasRef.current) return;
+    if ((interaction.mode !== 'interacting' && interaction.mode !== 'resizing') || !canvasRef.current || !doc) return;
+    const dpr = doc.getMeta()?.dpr || 1;
 
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -59,23 +82,33 @@ export function useEditorInteractions(
     }
 
     if (interaction.isDragging) {
-      const t = new Matrix().translate(dx, dy);
-      for (const id of interaction.nodes) {
-        setOverlays(id, t);
+      if (interaction.mode === 'interacting') {
+        const t = new Matrix().translate(dx, dy);
+        for (const id of interaction.nodes) {
+          setOverlays(id, t);
+        }
+      }
+      if (interaction.mode === 'resizing') {
+        for (const id of interaction.nodes) {
+          if (!engineRef.current) continue;
+          const overlay = calculateResizeOverlay(id, interaction, { x, y }, engineRef.current, dpr);
+          if (overlay) {
+            setOverlays(id, overlay);
+          }
+        }
       }
     }
   };
 
   const handleMouseUp = () => {
-    if (interaction.mode !== 'interacting' || !engineRef.current) return;
+    if ((interaction.mode !== 'interacting' && interaction.mode !== 'resizing') || !engineRef.current) return;
 
     // Commit the current overlay transform(s) to the document
     if (interaction.isDragging) {
       for (const id of interaction.nodes) {
         const overlay = overlays[id];
-        if (overlay) {
-          engineRef.current.applyTransform(id, overlay);
-        }
+        if (!overlay) continue;
+        engineRef.current.applyWorldOverlay(id, overlay);
       }
     }
 

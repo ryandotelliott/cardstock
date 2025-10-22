@@ -1,5 +1,4 @@
-export type Point = { x: number; y: number };
-export type Vec = { dx: number; dy: number };
+import type { Point, Vec } from '@/lib/geometry';
 
 // Row-major 2D affine matrix
 // [a, c, tx]
@@ -58,7 +57,7 @@ export class Matrix {
   rotate(radians: number): Matrix {
     const cos = Math.cos(radians);
     const sin = Math.sin(radians);
-    return this.multiply(new Matrix(cos, sin, -sin, cos, 0, 0));
+    return this.multiply(new Matrix(cos, -sin, sin, cos, 0, 0));
   }
 
   inverse(): Matrix {

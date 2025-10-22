@@ -54,3 +54,5 @@ export function transformPathGeometry(geom: PathGeometry, m: Matrix): PathGeomet
     })),
   };
 }
+export type Point = { x: number; y: number };
+export type Vec = { dx: number; dy: number };
